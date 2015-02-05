@@ -21,6 +21,12 @@ msgstr "North America"
 msgid "South America"
 msgstr "South America"
 
+msgid "Europe"
+msgstr "Europe"
+
+msgid "Oceania"
+msgstr "Oceania"
+
 msgid "Global"
 msgstr "Global"
 
@@ -30,6 +36,25 @@ msgstr "All Pool Servers"
 # navigation
 msgid "Translations"
 msgstr "Translations"
+
+# index.html
+msgid  "Introduction"
+msgstr "Introduction"
+
+msgid  "Active Servers"
+msgstr "Active Servers"
+
+msgid  "Links"
+msgstr "Links"
+
+msgid  "Terms of service"
+msgstr "Terms of service"
+
+msgid  "Subscribe in a reader"
+msgstr "Subscribe in a reader"
+
+msgid  "Older news"
+msgstr "Older news"
 
 # mailinglists.html
 msgid  "NTP Pool mailing lists"
@@ -78,8 +103,8 @@ msgstr "Not active in the pool, monitoring only"
 msgid  "Zones:"
 msgstr "Zones:"
 
-msgid  "This server is <span class="deletion">scheduled for deletion</span> on %1."
-msgstr "This server is <span class="deletion">scheduled for deletion</span> on %1."
+msgid  "This server is <span class=\"deletion\">scheduled for deletion</span> on %1."
+msgstr "This server is <span class=\"deletion\">scheduled for deletion</span> on %1."
 
 msgid  "Current score: %1 (only servers with a score higher than %2 are used in the pool)"
 msgstr "Current score: %1 (only servers with a score higher than %2 are used in the pool)"

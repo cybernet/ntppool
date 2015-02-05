@@ -12,6 +12,10 @@ use Sys::Hostname qw(hostname);
 use Email::Date qw();
 use JSON::XS qw(encode_json);
 use Net::DNS;
+use LWP::UserAgent qw();
+
+my $config     = Combust::Config->new;
+my $config_ntp = $config->site->{ntppool};
 
 sub init {
     my $self = shift;
@@ -25,14 +29,18 @@ sub init {
             warn $bc->errstr;
         }
         if ($bc_user and $bc_user->{id} and $bc_user->{username}) {
+            use Data::Dump qw(pp);
+            warn "Logging in user: ", pp($bc_user);
             my ($email_user) = NP::Model->user->fetch(email      => $bc_user->{email});
             my ($user)       = NP::Model->user->fetch(bitcard_id => $bc_user->{id});
             $user = $email_user if ($email_user and !$user);
             if ($user and $email_user and $user->id != $email_user->id) {
                 my @servers = NP::Model->server->get_servers(query => [user_id => $email_user->id]);
-                for my $server (@servers) {
-                    $server->user_id($user);
-                    $server->save;
+                if (@servers && $servers[0]) {
+                    for my $server (@servers) {
+                        $server->user_id($user);
+                        $server->save;
+                    }
                 }
                 $email_user->delete;
             }
@@ -136,20 +144,31 @@ sub handle_add {
         $server->{zones} = \@zones;
     }
 
-    $self->tpl_param(servers => \@servers);
-
     my $allow_submit = grep { !$_->{error} } @servers;
     my $data_missing = grep { $_->{data_missing} } @servers;
+
+    $self->tpl_param(servers => \@servers);
 
     $self->tpl_param('allow_submit' => $allow_submit);
 
     if ($self->req_param('yes') and $allow_submit and !$data_missing) {
         my $s;
+        my @added;
         for my $server (@servers) {
             unless ($server->{error} or $server->{listed}) {
                 $s = $self->_add_server($server);
+                push @added, $server;
             }
         }
+        $self->tpl_param(servers => \@added);
+        my $msg = $self->evaluate_template('tpl/manage/add_email.txt');
+        my $email =
+          Email::Simple->new(ref $msg ? $$msg : $msg);  # until we decide what eval_tpl should return :)
+        $email->header_set('Message-ID' => join("-", int(rand(1000)), $$, time) . '@' . hostname);
+        $email->header_set('Date' => Email::Date::format_date);
+        my $return = send SMTP => $email, 'localhost';
+        warn Data::Dumper->Dump([\$msg, \$email, \$return], [qw(msg email return)]);
+
         return $self->redirect('/manage/servers#s-' . ($s && $s->ip));
     }
 
@@ -243,14 +262,6 @@ sub _add_server {
 
     $db->commit;
 
-    my $msg = $self->evaluate_template('tpl/manage/add_email.txt');
-    my $email =
-      Email::Simple->new(ref $msg ? $$msg : $msg);  # until we decide what eval_tpl should return :)
-    $email->header_set('Message-ID' => join("-", int(rand(1000)), $$, time) . '@' . hostname);
-    $email->header_set('Date' => Email::Date::format_date);
-    my $return = send SMTP => $email, 'localhost';
-    warn Data::Dumper->Dump([\$msg, \$email, \$return], [qw(msg email return)]);
-
     return $s;
 }
 
@@ -333,15 +344,38 @@ sub handle_update {
       if $self->request->uri =~ m!^/manage/profile/update!;
     return $self->handle_update_netspeed
       if $self->request->uri =~ m!^/manage/server/update/netspeed!;
+    return $self->handle_mode7_check
+      if $self->request->uri =~ m!^/manage/server/update/mode7check!;
 
     # deletion and non-js netspeed
     if ($self->request->uri =~ m!^/manage/server/update/server!) {
+        return $self->handle_mode7_check if $self->req_param('mode7check');
         return $self->handle_update_netspeed if $self->req_param('Update');
         if ($self->req_param('Delete')) {
             return $self->handle_delete;
         }
     }
     return NOT_FOUND;
+}
+
+sub handle_mode7_check {
+    my $self = shift;
+    my $server = $self->req_server or return NOT_FOUND;
+    my $ntpcheck = $config_ntp->{ntpcheck};
+    my $ua = LWP::UserAgent->new;
+    my $url = URI->new("$ntpcheck");
+    $url->path("/check/" . $server->ip);
+    $url->query("queue=1");
+    warn "URL: $url";
+    $ua->post($url);
+    return $self->redirect('/manage/servers') if $self->req_param('noscript');
+
+    my $return = {
+        queued => 1,
+    };
+
+    return OK, encode_json($return);
+
 }
 
 sub handle_update_netspeed {

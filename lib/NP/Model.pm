@@ -159,6 +159,7 @@ __PACKAGE__->meta->setup(
     score      => { type => 'scalar', default => '0', length => 64, not_null => 1 },
     step       => { type => 'scalar', default => '0', length => 64, not_null => 1 },
     offset     => { type => 'scalar', length => 64 },
+    attributes => { type => 'text', length => 65535 },
   ],
 
   primary_key_columns => [ 'id' ],
@@ -175,6 +176,8 @@ __PACKAGE__->meta->setup(
     },
   ],
 );
+
+__PACKAGE__->meta->setup_json_columns(qw< attributes >);
 
 push @table_classes, __PACKAGE__;
 }
@@ -193,6 +196,50 @@ __PACKAGE__->make_manager_methods('log_scores');
 # Allow user defined methods to be added
 eval { require NP::Model::LogScore }
   or $@ !~ m:^Can't locate NP/Model/LogScore.pm: and die $@;
+
+{ package NP::Model::LogStatus;
+
+use strict;
+
+use base qw(NP::Model::_Object);
+
+__PACKAGE__->meta->setup(
+  table   => 'log_status',
+
+  columns => [
+    server_id   => { type => 'integer', not_null => 1 },
+    last_check  => { type => 'datetime', default => 'now', not_null => 1 },
+    ts_archived => { type => 'datetime', default => 'now', not_null => 1 },
+  ],
+
+  primary_key_columns => [ 'server_id' ],
+
+  foreign_keys => [
+    server => {
+      class       => 'NP::Model::Server',
+      key_columns => { server_id => 'id' },
+      rel_type    => 'one to one',
+    },
+  ],
+);
+
+push @table_classes, __PACKAGE__;
+}
+
+{ package NP::Model::LogStatus::Manager;
+
+use strict;
+
+our @ISA = qw(Combust::RoseDB::Manager);
+
+sub object_class { 'NP::Model::LogStatus' }
+
+__PACKAGE__->make_manager_methods('log_status');
+}
+
+# Allow user defined methods to be added
+eval { require NP::Model::LogStatus }
+  or $@ !~ m:^Can't locate NP/Model/LogStatus.pm: and die $@;
 
 { package NP::Model::Monitor;
 
@@ -340,6 +387,13 @@ __PACKAGE__->meta->setup(
       type       => 'one to many',
     },
 
+    log_status => {
+      class                => 'NP::Model::LogStatus',
+      column_map           => { id => 'server_id' },
+      type                 => 'one to one',
+      with_column_triggers => '0',
+    },
+
     logs => {
       class      => 'NP::Model::Log',
       column_map => { id => 'server_id' },
@@ -453,11 +507,12 @@ __PACKAGE__->meta->setup(
   table   => 'server_notes',
 
   columns => [
-    id         => { type => 'serial', not_null => 1 },
-    server_id  => { type => 'integer', not_null => 1 },
-    name       => { type => 'varchar', default => '', length => 255, not_null => 1 },
-    note       => { type => 'text', length => 65535, not_null => 1 },
-    created_on => { type => 'datetime', default => 'now', not_null => 1 },
+    id          => { type => 'serial', not_null => 1 },
+    server_id   => { type => 'integer', not_null => 1 },
+    name        => { type => 'varchar', default => '', length => 255, not_null => 1 },
+    note        => { type => 'text', length => 65535, not_null => 1 },
+    created_on  => { type => 'datetime', default => 'now', not_null => 1 },
+    modified_on => { type => 'timestamp', not_null => 1 },
   ],
 
   primary_key_columns => [ 'id' ],
@@ -1013,6 +1068,7 @@ eval { require NP::Model::ZoneServerCount }
   sub dns_root { our $dns_root ||= bless [], 'NP::Model::DnsRoot::Manager' }
   sub log { our $log ||= bless [], 'NP::Model::Log::Manager' }
   sub log_score { our $log_score ||= bless [], 'NP::Model::LogScore::Manager' }
+  sub log_status { our $log_status ||= bless [], 'NP::Model::LogStatus::Manager' }
   sub monitor { our $monitor ||= bless [], 'NP::Model::Monitor::Manager' }
   sub schema_revision { our $schema_revision ||= bless [], 'NP::Model::SchemaRevision::Manager' }
   sub server { our $server ||= bless [], 'NP::Model::Server::Manager' }

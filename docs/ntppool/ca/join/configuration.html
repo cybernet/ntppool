@@ -1,6 +1,6 @@
 <div class="block">
 
-<h3>Configuració recomenada per a servidors que voleu unir al pool</h3>
+<h3>Configuració recomanada per a servidors que voleu unir al pool</h3>
 
 <p>
 La <a href="http://support.ntp.org/bin/view/Support/WebHome">secció &quot;suport&quot;</a> a
@@ -19,6 +19,16 @@ is el millor lloc per obtenir ajuda amb el programari ntpd.
 <p>
 Més abaix trobareu algunes coses d'interès particular, si voleu unir el vostre servidor al pool.
 </p>
+
+<h4 id="management-queries">Management queries</h4>
+
+<p>Make the default configuration be to not allow "management queries". For ntpd this will be adding the "noquery" option to the default "restrict" lines, for example:</p>
+
+[% INCLUDE "join/configuration/restrict-default.html" %]
+
+<p>To allow commands like "ntpq -c pe" to work from localhost you can add:</p>
+
+[% INCLUDE "join/configuration/restrict-localhost.html" %]
 
 <h4>Configureu aproximadament 5 servidors</h4>
 

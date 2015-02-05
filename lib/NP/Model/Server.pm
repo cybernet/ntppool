@@ -7,7 +7,7 @@ use Net::IP ();
 use Combust::Config;
 
 use POSIX qw();
-$ENV{TZ} = 'UTC';   
+$ENV{TZ} = 'UTC';
 POSIX::tzset();
 
 my $config = Combust::Config->new;
@@ -15,7 +15,7 @@ my $config = Combust::Config->new;
 sub active_score {
     return 10
 };
- 
+
 sub insert {
     my $self = shift;
 
@@ -33,12 +33,13 @@ sub setup_server {
     my $self = shift;
 
     my $start_score = -5;
-    my $ls = $self->add_log_scores({ step => 1, score => $start_score, offset => 0 });
+    my $ls          = $self->add_log_scores({step => 1, score => $start_score, offset => 0});
+    my $log_status  = $self->log_status({last_check => 'now', ts_archived => 'now'});
     $self->deletion_on(undef);
     $self->score_raw($start_score);
 
     my $monitors = NP::Model->monitor->get_objects
-      ( query => [ ip_version => $self->ip_version ] 
+      ( query => [ ip_version => $self->ip_version ]
       );
 
     for my $monitor (@$monitors) {
@@ -144,6 +145,19 @@ sub history {
 sub alert {
     my $self  = shift;
     return NP::Model->server_alert->fetch_or_create(server => $self);
+}
+
+sub note {
+    my ($self, $name) = @_;
+    my $note = NP::Model->server_note->fetch_or_create(server => $self->id, name => $name);
+    return $note;
+}
+
+sub mode7check {
+    my $self = shift;
+    my $mode7 = $self->note('mode7check');
+    return unless $mode7->id;
+    return $mode7;
 }
 
 sub log_scores_csv {

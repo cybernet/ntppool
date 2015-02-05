@@ -18,6 +18,7 @@ my $version = NP::Version->new;
 my $config  = Combust::Config->new;
 
 our %valid_languages = (
+    bg => {name => "Мила Родино", testing => 1},
     ca => {name => "Català", testing => 1},
     de => {name => "Deutsch"},
     da => {name => "Danish",  testing => 1,},
@@ -26,13 +27,17 @@ our %valid_languages = (
     fi => {name => "Suomi"},
     fr => {name => "Français",},
     it => { name => "Italiano", testing => 1 },
-    jp => {name => "日本語"},
+    ja => {name => "日本語"},
     ko => {name => "한국어",},
+    kz => {name => "Қазақша", testing=>1 },
     nl => {name => "Nederlands",},
     pl => {name => "Polish",  testing => 1},
     pt => {name => "Português"},
+    ro => {name => "Română", testing => 1},
+    rs => {name => "српски srpski"},
     ru => {name => "русский",},
     sv => {name => "Svenska"},
+    tr => {name => "Türkçe", testing => 1},
     uk => {name => "Українська"},
 );
 

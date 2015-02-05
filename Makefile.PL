@@ -73,12 +73,14 @@ sub MY::postamble {
 
 .PHONY: testcover
 
+HULK ?= ./node_modules/hogan.js/bin/hulk
+
 templates:
-	(cd docs/manage/tpl/client; hulk *.html > ../../../shared/static/js/admin-templates.js)
+	($(HULK) docs/manage/tpl/client/*.html > docs/shared/static/js/admin-templates.js)
 
 testcover:
 	cover -delete
-	HARNESS_PERL_SWITCHES=-MDevel::Cover \$(MAKE) test
+	HARNESS_PERL_SWITCHES=-MDevel::Cover $(MAKE) test
 	cover
 
 MAKE_FRAG
